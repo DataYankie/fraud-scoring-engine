@@ -18,5 +18,6 @@ dev = [
 [tool.pyright]
 extraPaths = ["src"]
 
-[tool.basedpyright]
-extraPaths = ["src"]
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
