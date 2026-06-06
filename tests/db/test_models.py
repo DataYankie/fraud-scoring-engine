@@ -44,7 +44,7 @@ def test_transaction_time_columns_indexed() -> None:
         for index in table.indexes
         for column in index.columns
     }
-    assert indexed_columns == {"transaction_dt", "transaction_at"}
+    assert indexed_columns == {"transaction_dt", "transaction_at", "derived_user_id"}
 
 
 def test_transaction_has_ieee_ops_columns() -> None:
