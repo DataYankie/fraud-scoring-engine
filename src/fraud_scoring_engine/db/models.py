@@ -13,6 +13,7 @@ class Transaction(Base):
 
     # In the dataset, TransactionID is the explicit primary key linking both files
     transaction_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    derived_user_id: Mapped[str] = mapped_column(String(32), nullable=True, index=True) # Derived user ID from combination of different features
     is_fraud: Mapped[int | None] = mapped_column(Integer, nullable=True)  # The target variable from the dataset
 
     # Core Tabular Features from IEEE-CIS
