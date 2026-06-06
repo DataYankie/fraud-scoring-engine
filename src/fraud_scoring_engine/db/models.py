@@ -1,56 +1,74 @@
 from datetime import datetime
-from uuid import uuid4
-from sqlalchemy import String, Numeric, DateTime, ForeignKey, Integer, JSON
+
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
 
 class Base(DeclarativeBase):
     pass
-
-class UserRiskProfile(Base):
-    __tablename__ = "user_risk_profiles"
-
-    user_id: Mapped[str] = mapped_column(String, primary_key=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Pre-aggregated behavioral features for fast ML inference
-    transaction_count_1h: Mapped[int] = mapped_column(Integer, default=0)
-    total_spend_24h: Mapped[float] = mapped_column(Numeric(10, 2), default=0.00)
-    distinct_ip_count_24h: Mapped[int] = mapped_column(Integer, default=1)
-    
-    # Metadata for the agentic layer (e.g., trusted device tokens, geographical baselines)
-    risk_metadata: Mapped[dict] = mapped_column(JSON, nullable=True)
-
-    transactions: Mapped[list["Transaction"]] = relationship(back_populates="user_profile")
 
 
 class Transaction(Base):
     __tablename__ = "transactions"
 
-    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid4()))
-    user_id: Mapped[str] = mapped_column(String, ForeignKey("user_risk_profiles.user_id"), nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True) # Indexed for fast time-window queries
-    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
-    
-    # Device & Network telemetry data
-    ip_address: Mapped[str] = mapped_column(String(45), nullable=False) # Supports IPv4/IPv6
-    device_id: Mapped[str] = mapped_column(String, nullable=False)
-    
-    user_profile: Mapped["UserRiskProfile"] = relationship(back_populates="transactions")
+    # In the dataset, TransactionID is the explicit primary key linking both files
+    transaction_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    is_fraud: Mapped[int | None] = mapped_column(Integer, nullable=True)  # The target variable from the dataset
+
+    # Core Tabular Features from IEEE-CIS
+    transaction_amt: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    product_cd: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    transaction_dt: Mapped[int] = mapped_column(Integer, nullable=False, index=True)  # Raw seconds
+    transaction_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)  # Derived datetime
+
+    # Card details (card1 - card6)
+    card1: Mapped[float | None] = mapped_column(Float, nullable=True)
+    card2: Mapped[float | None] = mapped_column(Float, nullable=True)
+    card3: Mapped[float | None] = mapped_column(Float, nullable=True)
+    card4: Mapped[str | None] = mapped_column(String(50), nullable=True)  # e.g., "visa", "mastercard"
+    card5: Mapped[float | None] = mapped_column(Float, nullable=True)
+    card6: Mapped[str | None] = mapped_column(String(50), nullable=True)  # e.g., "debit", "credit"
+
+    # Email domains
+    p_emaildomain: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    r_emaildomain: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+    # Address / distance signals
+    addr1: Mapped[float | None] = mapped_column(Float, nullable=True)
+    addr2: Mapped[float | None] = mapped_column(Float, nullable=True)
+    dist1: Mapped[float | None] = mapped_column(Float, nullable=True)
+    dist2: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    # Relationships
+    identity: Mapped["TransactionIdentity"] = relationship(back_populates="transaction", uselist=False)
     alert: Mapped["FraudAlert"] = relationship(back_populates="transaction")
+
+
+class TransactionIdentity(Base):
+    __tablename__ = "transaction_identities"
+
+    transaction_id: Mapped[int] = mapped_column(Integer, ForeignKey("transactions.transaction_id"), primary_key=True)
+
+    # Telemetry data from train_identity.csv
+    id_30: Mapped[str | None] = mapped_column(String(100), nullable=True)  # e.g., OS Version "Windows 10"
+    id_31: Mapped[str | None] = mapped_column(String(100), nullable=True)  # e.g., Browser "chrome 63.0"
+    device_type: Mapped[str | None] = mapped_column(String(50), nullable=True)  # e.g., "desktop", "mobile"
+    device_info: Mapped[str | None] = mapped_column(String(100), nullable=True)  # e.g., "Windows Id:Windows"
+
+    transaction: Mapped["Transaction"] = relationship(back_populates="identity")
 
 
 class FraudAlert(Base):
     __tablename__ = "fraud_alerts"
 
-    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid4()))
-    transaction_id: Mapped[str] = mapped_column(String, ForeignKey("transactions.id"), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    transaction_id: Mapped[int] = mapped_column(Integer, ForeignKey("transactions.transaction_id"), nullable=False)
+
     # Engine Pipeline Outputs
-    raw_ml_score: Mapped[float] = mapped_column(Numeric(4, 3), nullable=False) # e.g., 0.942
-    decision: Mapped[str] = mapped_column(String(20), nullable=False) # ALLOW, REVIEW, BLOCK
-    
-    # The Agentic Moat: Natural language justification
+    predicted_ml_prob: Mapped[float] = mapped_column(Numeric(4, 3), nullable=False)
+    decision: Mapped[str] = mapped_column(String(20), nullable=False)  # ALLOW, REVIEW, BLOCK
+
+    # The Agentic Output Moat
     ai_analyst_reason: Mapped[str] = mapped_column(String, nullable=False)
 
     transaction: Mapped["Transaction"] = relationship(back_populates="alert")
