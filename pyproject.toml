@@ -8,6 +8,7 @@ dependencies = [
     "alembic>=1.18.4",
     "kagglehub>=1.0.1",
     "pandas>=2.2.0",
+    "pyarrow>=18.0.0",
     "psycopg[binary]>=3.3.4",
     "sqlalchemy>=2.0.49",
 ]
