@@ -58,8 +58,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=500,
-        help="Rows per database commit batch (default: 500).",
+        default=5000,
+        help="Rows per database commit batch (default: 5000).",
     )
     parser.add_argument(
         "--dry-run",

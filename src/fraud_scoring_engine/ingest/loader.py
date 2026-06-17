@@ -2,19 +2,28 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, cast
 
-from sqlalchemy import select
+import pandas as pd
+from sqlalchemy import insert, select
 from sqlalchemy.orm import Session
 
 from fraud_scoring_engine.db.engine import create_db_engine
-from fraud_scoring_engine.db.models import Transaction
+from fraud_scoring_engine.db.models import Transaction, TransactionIdentity
 from fraud_scoring_engine.ingest.columns import database_columns, split_parquet_features
 from fraud_scoring_engine.ingest.exporter import write_train_features_parquet
 from fraud_scoring_engine.ingest.paths import IeeeDataPaths, ieee_data_paths
 from fraud_scoring_engine.ingest.reader import load_merged_train_data_full
-from fraud_scoring_engine.ingest.transforms import merged_row_to_models
+from fraud_scoring_engine.ingest.transforms import (
+    count_identity_rows,
+    prepare_identities_df,
+    prepare_transactions_df,
+)
+
+EXISTING_ID_LOOKUP_BATCH = 10_000
 
 
 @dataclass(frozen=True)
@@ -38,46 +47,79 @@ def _existing_transaction_ids(session: Session, transaction_ids: list[int]) -> s
     return set(session.scalars(stmt).all())
 
 
+def _lookup_existing_transaction_ids(
+    session: Session,
+    transaction_ids: list[int],
+    *,
+    lookup_batch_size: int = EXISTING_ID_LOOKUP_BATCH,
+) -> set[int]:
+    existing: set[int] = set()
+    for start in range(0, len(transaction_ids), lookup_batch_size):
+        batch_ids = transaction_ids[start : start + lookup_batch_size]
+        existing |= _existing_transaction_ids(session, batch_ids)
+    return existing
+
+
+def _bulk_insert_records(
+    session: Session,
+    table,
+    records: list[Mapping[str, Any]],
+    *,
+    batch_size: int,
+) -> int:
+    inserted = 0
+    for start in range(0, len(records), batch_size):
+        batch = records[start : start + batch_size]
+        if not batch:
+            continue
+        session.execute(insert(table), batch)
+        session.commit()
+        inserted += len(batch)
+    return inserted
+
+
 def _ingest_to_postgres(
-    merged,
+    merged: pd.DataFrame,
     *,
     batch_size: int,
 ) -> tuple[int, int, int]:
     rows_read = len(merged)
-    rows_inserted = 0
-    rows_skipped = 0
-    identities_inserted = 0
+    transactions_df = prepare_transactions_df(merged)
+    identities_df = prepare_identities_df(merged)
 
     engine = create_db_engine()
     with Session(engine) as session:
-        for start in range(0, rows_read, batch_size):
-            batch = merged.iloc[start : start + batch_size]
-            batch_ids = batch["TransactionID"].astype(int).tolist()
-            existing = _existing_transaction_ids(session, batch_ids)
+        incoming_ids = transactions_df["transaction_id"].astype(int).tolist()
+        existing = _lookup_existing_transaction_ids(session, incoming_ids)
+        rows_skipped = len(existing)
 
-            to_insert: list[object] = []
-            batch_inserted = 0
-            batch_identities = 0
+        to_insert = transactions_df[~transactions_df["transaction_id"].isin(existing)]
+        inserted_ids = set(to_insert["transaction_id"].astype(int).tolist())
+        identities_to_insert = identities_df[
+            identities_df["transaction_id"].isin(inserted_ids)
+        ]
 
-            for _, row in batch.iterrows():
-                transaction_id = int(row["TransactionID"])
-                if transaction_id in existing:
-                    rows_skipped += 1
-                    continue
+        transaction_records = cast(
+            list[Mapping[str, Any]],
+            to_insert.to_dict(orient="records"),
+        )
+        identity_records = cast(
+            list[Mapping[str, Any]],
+            identities_to_insert.to_dict(orient="records"),
+        )
 
-                transaction, identity = merged_row_to_models(row)
-                to_insert.append(transaction)
-                batch_inserted += 1
-                if identity is not None:
-                    to_insert.append(identity)
-                    batch_identities += 1
-
-            if to_insert:
-                session.add_all(to_insert)
-                session.commit()
-
-            rows_inserted += batch_inserted
-            identities_inserted += batch_identities
+        rows_inserted = _bulk_insert_records(
+            session,
+            Transaction.__table__,
+            transaction_records,
+            batch_size=batch_size,
+        )
+        identities_inserted = _bulk_insert_records(
+            session,
+            TransactionIdentity.__table__,
+            identity_records,
+            batch_size=batch_size,
+        )
 
     return rows_inserted, rows_skipped, identities_inserted
 
@@ -88,7 +130,7 @@ def ingest_train_transactions(
     processed_dir: Path | None = None,
     parquet_path: Path | None = None,
     limit: int | None = None,
-    batch_size: int = 500,
+    batch_size: int = 5000,
     dry_run: bool = False,
     skip_db: bool = False,
     skip_parquet: bool = False,
@@ -147,11 +189,7 @@ def ingest_train_transactions(
             write_train_features_parquet(features, output_parquet)
 
     if dry_run:
-        identity_count = sum(
-            1
-            for _, row in merged.iterrows()
-            if merged_row_to_models(row)[1] is not None
-        )
+        identity_count = count_identity_rows(merged)
         print(
             f"Dry run: {rows_read} transactions, {identity_count} with identity data, "
             f"{parquet_rows} parquet feature rows"
