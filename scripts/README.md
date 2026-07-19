@@ -46,6 +46,13 @@ uv run python scripts/ingest_ieee_transactions.py --skip-db --limit 10000
 uv run python scripts/ingest_ieee_transactions.py
 ```
 
+### 4. Generate behavioral training features
+Computes rolling velocity, spend, and amount-ratio features from PostgreSQL (one query + in-memory pass).
+
+```bash
+uv run python scripts/generate_training_data.py --limit 10000
+```
+
 #### Training features in Python
 ```python
 import pandas as pd
