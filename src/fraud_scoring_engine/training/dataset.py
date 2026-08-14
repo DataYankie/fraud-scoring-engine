@@ -40,7 +40,13 @@ POSTGRES_MODEL_COLUMNS: tuple[str, ...] = (
     "device_info",
 )
 
-POSTGRES_TRAINING_COLUMNS: tuple[str, ...] = ("transaction_id", "is_fraud", *POSTGRES_MODEL_COLUMNS)
+# ``transaction_dt`` is loaded for time-based splits, not as a model feature.
+POSTGRES_TRAINING_COLUMNS: tuple[str, ...] = (
+    "transaction_id",
+    "is_fraud",
+    "transaction_dt",
+    *POSTGRES_MODEL_COLUMNS,
+)
 
 _BEHAVIORAL_DEFAULTS = asdict(DEFAULT_BEHAVIORAL_FEATURES)
 
@@ -57,13 +63,15 @@ def load_transaction_model_columns(
         transaction_ids: Optional subset of ``transaction_id`` values to load.
 
     Returns:
-        DataFrame keyed by ``transaction_id`` with ``is_fraud`` and
+        DataFrame keyed by ``transaction_id`` with ``is_fraud``,
+        ``transaction_dt`` (for time-based splits), and
         :data:`POSTGRES_MODEL_COLUMNS`.
     """
     stmt = (
         select(
             Transaction.transaction_id,
             Transaction.is_fraud,
+            Transaction.transaction_dt,
             Transaction.transaction_amt,
             Transaction.product_cd,
             Transaction.card1,

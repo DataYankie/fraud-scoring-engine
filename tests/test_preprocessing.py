@@ -15,12 +15,14 @@ def test_feature_columns_excludes_metadata() -> None:
         {
             "transaction_id": [1, 2],
             "is_fraud": [0, 1],
+            "transaction_dt": [10, 20],
             "C1": [1.0, 2.0],
             "M1": ["T", "F"],
         }
     )
 
     assert feature_columns(frame) == ["C1", "M1"]
+    assert DROP_COLUMNS == frozenset({"transaction_id", "is_fraud", "transaction_dt"})
 
 
 def test_fit_transform_preserves_numeric_nulls() -> None:

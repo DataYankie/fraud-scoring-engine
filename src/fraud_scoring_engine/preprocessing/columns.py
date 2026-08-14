@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 
 # Columns excluded from the model feature matrix.
-DROP_COLUMNS: frozenset[str] = frozenset({"transaction_id", "is_fraud"})
+DROP_COLUMNS: frozenset[str] = frozenset({"transaction_id", "is_fraud", "transaction_dt"})
 
 # Placeholder category for null or unseen categorical levels at scoring time.
 MISSING_CATEGORY = "__MISSING__"

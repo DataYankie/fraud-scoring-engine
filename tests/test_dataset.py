@@ -125,6 +125,7 @@ def test_build_training_frame_merges_all_sources(
     assert "C1" in dataframe.columns
     assert "velocity_1h" in dataframe.columns
     assert "is_fraud" in dataframe.columns
+    assert "transaction_dt" in dataframe.columns
     assert set(dataframe["transaction_id"]) == {101, 102}
 
 
