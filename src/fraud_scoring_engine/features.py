@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -193,6 +194,14 @@ class TransactionFeatures:
     avg_amount_ratio_90d: float | None
 
 
+BEHAVIORAL_FEATURE_COLUMNS: tuple[str, ...] = (
+    "velocity_1h",
+    "cumulative_spend_24h",
+    "avg_amount_ratio_30d",
+    "avg_amount_ratio_90d",
+)
+
+
 @dataclass(frozen=True)
 class _TxnRow:
     """Minimal transaction fields used for bulk feature computation."""
@@ -210,6 +219,8 @@ _NULL_FEATURES = TransactionFeatures(
     avg_amount_ratio_30d=None,
     avg_amount_ratio_90d=None,
 )
+
+DEFAULT_BEHAVIORAL_FEATURES = _NULL_FEATURES
 
 
 def _compute_bulk_user_group(rows: list[_TxnRow]) -> dict[int, TransactionFeatures]:
@@ -313,36 +324,50 @@ def compute_transaction_features_dataframe(
     session: Session,
     *,
     limit: int | None = 10_000,
+    transaction_ids: Iterable[int] | None = None,
 ) -> pd.DataFrame:
     """Compute rolling behavioral features for many transactions efficiently.
 
     Loads all transactions with one query, computes features in memory using
-    per-user sliding windows (linear time), then returns up to ``limit`` rows
-    in chronological order.
+    per-user sliding windows (linear time), then returns rows filtered by
+    ``transaction_ids`` or truncated to ``limit`` in chronological order.
 
     Args:
         session: Active SQLAlchemy ORM session.
         limit: Maximum number of rows to return, ordered by ``transaction_at``
-            then ``transaction_id``. ``None`` returns all rows.
+            then ``transaction_id``. Ignored when ``transaction_ids`` is set.
+            ``None`` returns all rows unless ``transaction_ids`` is set.
+        transaction_ids: Optional explicit ``transaction_id`` values to export,
+            preserving this order in the result.
 
     Returns:
         DataFrame with ``transaction_id``, ``is_fraud``, and feature columns.
     """
     rows = _fetch_all_transaction_rows(session)
+    columns = [
+        "transaction_id",
+        "is_fraud",
+        "velocity_1h",
+        "cumulative_spend_24h",
+        "avg_amount_ratio_30d",
+        "avg_amount_ratio_90d",
+    ]
     if not rows:
-        return pd.DataFrame(
-            columns=[
-                "transaction_id",
-                "is_fraud",
-                "velocity_1h",
-                "cumulative_spend_24h",
-                "avg_amount_ratio_30d",
-                "avg_amount_ratio_90d",
-            ]
-        )
+        return pd.DataFrame(columns=columns)
 
     feature_by_id = _compute_features_by_transaction_id(rows)
-    export_rows = rows if limit is None else rows[:limit]
+    if transaction_ids is not None:
+        row_by_id = {row.transaction_id: row for row in rows}
+        export_rows = [
+            row_by_id[int(transaction_id)]
+            for transaction_id in transaction_ids
+            if int(transaction_id) in row_by_id
+        ]
+    elif limit is None:
+        export_rows = rows
+    else:
+        export_rows = rows[:limit]
+
     records = [
         _features_to_record(row, feature_by_id[row.transaction_id])
         for row in export_rows
