@@ -1,6 +1,7 @@
 """Application configuration loaded from environment variables."""
 
 import os
+from pathlib import Path
 from urllib.parse import quote_plus
 
 
@@ -78,6 +79,52 @@ def get_postgres_db() -> str:
         The database name.
     """
     return os.environ.get("POSTGRES_DB", "fraud_db")
+
+
+def get_mlflow_db() -> str:
+    """Return the PostgreSQL database name used for MLflow tracking.
+
+    Reads ``MLFLOW_DB``. Falls back to ``mlflow_db`` if unset.
+
+    Returns:
+        The MLflow tracking database name.
+    """
+    return os.environ.get("MLFLOW_DB", "mlflow_db")
+
+
+def get_mlflow_tracking_uri() -> str:
+    """Return the MLflow tracking store URI.
+
+    If ``MLFLOW_TRACKING_URI`` is set, it is returned unchanged. Otherwise
+    builds a ``postgresql+psycopg://`` URL for :func:`get_mlflow_db` using
+    the same ``POSTGRES_*`` connection settings as the application database.
+
+    Returns:
+        A connection URL suitable for MLflow tracking.
+
+    Raises:
+        RuntimeError: If ``POSTGRES_PASSWORD`` is missing when building the URL.
+    """
+    if url := os.environ.get("MLFLOW_TRACKING_URI"):
+        return url
+    password = quote_plus(get_postgres_password())
+    return (
+        f"postgresql+psycopg://{get_postgres_user()}:{password}"
+        f"@{get_postgres_host()}:{get_postgres_port()}/{get_mlflow_db()}"
+    )
+
+
+def get_mlflow_artifact_root() -> Path:
+    """Return the local directory used for MLflow artifact storage.
+
+    Reads ``MLFLOW_ARTIFACT_ROOT``. Defaults to ``{repo_root}/mlartifacts``.
+
+    Returns:
+        Path to the artifact root directory.
+    """
+    if path := os.environ.get("MLFLOW_ARTIFACT_ROOT"):
+        return Path(path)
+    return Path(__file__).resolve().parents[2] / "mlartifacts"
 
 
 def get_database_url() -> str:

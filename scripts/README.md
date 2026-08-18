@@ -53,10 +53,11 @@ Computes rolling velocity, spend, and amount-ratio features from PostgreSQL (one
 uv run python scripts/generate_training_data.py --limit 10000
 ```
 
-#### Training features in Python
-```python
-import pandas as pd
+#### MLflow UI
+Requires `POSTGRES_PASSWORD` (or `MLFLOW_TRACKING_URI`) in the environment.
 
-features = pd.read_parquet("data/processed/train_features.parquet")
-# Join to Postgres on features["TransactionID"] == transactions.transaction_id
+```bash
+uv run mlflow ui --backend-store-uri postgresql+psycopg://postgres:PASSWORD@localhost:5432/mlflow_db
 ```
+
+Tracking metadata lives in `mlflow_db`; model artifacts are stored under `mlartifacts/`.

@@ -221,3 +221,5 @@ __marimo__/
 .vscode/
 env_local.ps1
 data/
+mlruns/
+mlartifacts/

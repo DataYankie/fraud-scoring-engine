@@ -153,6 +153,8 @@ def _merge_behavioral_features(
 
     merged = frame.merge(behavioral_features, on="transaction_id", how="left")
     for column, default in _BEHAVIORAL_DEFAULTS.items():
+        if default is None:
+            continue
         merged[column] = merged[column].fillna(default)
     return merged
 
