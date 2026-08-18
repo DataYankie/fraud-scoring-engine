@@ -90,7 +90,7 @@ def generate_user_id_from_components(components: dict[str, object]) -> str:
 
 
 def derive_transaction_at(dt_seconds: int) -> datetime:
-    """Convert IEEE ``TransactionDT`` seconds to a wall-clock datetime.
+    """Convert IEEE ``TransactionDT`` seconds to a datetime.
 
     Args:
         dt_seconds: Seconds elapsed since 2017-11-30.
