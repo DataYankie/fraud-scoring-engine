@@ -1,4 +1,9 @@
-"""Column metadata for fraud model preprocessing."""
+"""Define column metadata for model preprocessing and feature selection.
+
+This module names the non-feature columns dropped before training and provides
+helpers for determining which columns in a merged dataset should enter the
+model feature matrix.
+"""
 
 from __future__ import annotations
 

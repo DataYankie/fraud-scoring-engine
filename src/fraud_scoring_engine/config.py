@@ -1,4 +1,9 @@
-"""Application configuration loaded from environment variables."""
+"""Resolve database and MLflow configuration from environment variables.
+
+This module centralizes environment-backed settings used across the project,
+including PostgreSQL connection details, repository-relative paths, and MLflow
+tracking and artifact locations.
+"""
 
 import os
 from pathlib import Path

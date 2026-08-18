@@ -1,4 +1,8 @@
-"""Generate behavioral training features from PostgreSQL transactions.
+"""Generate behavioral training features from ingested transactions.
+
+This script reads transaction records from PostgreSQL, computes rolling
+behavioral features, and writes the resulting dataset to a Parquet file for
+training and experimentation.
 
 Usage:
     uv run python scripts/generate_training_data.py --limit 10000
@@ -7,7 +11,7 @@ Usage:
 
 Prerequisites:
     - PostgreSQL running with ingested transactions
-    - POSTGRES_PASSWORD or DATABASE_URL set (see env_local.ps1)
+    - `POSTGRES_PASSWORD` or `DATABASE_URL` set
 """
 
 from __future__ import annotations

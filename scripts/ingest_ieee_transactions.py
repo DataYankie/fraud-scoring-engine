@@ -1,4 +1,8 @@
-"""Ingest IEEE-CIS train transactions into PostgreSQL and Parquet.
+"""Ingest IEEE-CIS training transactions into PostgreSQL and Parquet.
+
+This script loads the merged training CSV data, writes operational columns to
+PostgreSQL, and exports the remaining feature columns to
+`data/processed/train_features.parquet` for downstream model work.
 
 Usage:
     uv run python scripts/ingest_ieee_transactions.py --limit 10000
@@ -7,14 +11,11 @@ Usage:
     uv run python scripts/ingest_ieee_transactions.py --skip-db --limit 10000
     uv run python scripts/ingest_ieee_transactions.py --skip-parquet
 
-Writes operational columns to PostgreSQL and all other CSV columns to
-``data/processed/train_features.parquet`` (same row slice as ``--limit``).
-
 Prerequisites:
-    - Raw CSVs in data/raw/ (see scripts/download_ieee_fraud_data.py)
-    - PostgreSQL running (docker-compose up -d) when not using ``--skip-db``
-    - POSTGRES_PASSWORD or DATABASE_URL set (see env_local.ps1)
-    - Schema applied: alembic upgrade head
+    - Raw CSVs in `data/raw/` from `scripts/download_ieee_fraud_data.py`
+    - PostgreSQL running when not using `--skip-db`
+    - `POSTGRES_PASSWORD` or `DATABASE_URL` set
+    - Schema applied with `alembic upgrade head`
 """
 
 from __future__ import annotations

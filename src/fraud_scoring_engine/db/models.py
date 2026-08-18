@@ -1,3 +1,10 @@
+"""Define SQLAlchemy models for transactions and identity records.
+
+This module maps the operational PostgreSQL tables used by the ingest and
+feature pipelines, including the primary transaction record and its optional
+device and identity attributes.
+"""
+
 from datetime import datetime
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, Numeric, String

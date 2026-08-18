@@ -1,4 +1,9 @@
-"""Assemble unified training frames from Parquet and PostgreSQL."""
+"""Assemble training datasets from Parquet features and PostgreSQL records.
+
+This module loads, joins, and fills the transaction, identity, and behavioral
+features needed for model experiments, producing merged frames for training and
+evaluation workflows.
+"""
 
 from __future__ import annotations
 

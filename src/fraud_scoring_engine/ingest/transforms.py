@@ -1,4 +1,9 @@
-"""Transform IEEE-CIS DataFrames for PostgreSQL bulk ingest."""
+"""Transform raw IEEE-CIS DataFrames into database-ready records.
+
+This module normalizes timestamps, derives stable user identifiers, cleans
+missing values, and reshapes transaction and identity data for PostgreSQL bulk
+insertion.
+"""
 
 from __future__ import annotations
 
@@ -143,7 +148,9 @@ def _derive_user_id_series(merged: pd.DataFrame) -> pd.Series:
         axis=1,
     )
     uid_strings = components.agg("_".join, axis=1)
-    return uid_strings.map(lambda value: hashlib.md5(value.encode("utf-8")).hexdigest())
+    return uid_strings.map(
+        lambda value: hashlib.md5(str(value).encode("utf-8")).hexdigest()
+    )
 
 
 def _has_identity_data_mask(merged: pd.DataFrame) -> pd.Series:

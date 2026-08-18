@@ -1,11 +1,15 @@
-"""Download IEEE-CIS Fraud Detection competition data into data/raw/.
+"""Download the IEEE-CIS fraud detection dataset into `data/raw/`.
+
+This script pulls the competition CSV files from Kaggle and verifies that the
+expected train, test, and sample submission files are present locally.
 
 Usage:
     uv run python scripts/download_ieee_fraud_data.py
 
-Requires Kaggle credentials via KAGGLE_API_TOKEN or ~/.kaggle/access_token.
-You must join and accept the competition rules at:
-https://www.kaggle.com/competitions/ieee-fraud-detection
+Prerequisites:
+    - Kaggle credentials via `KAGGLE_API_TOKEN` or `~/.kaggle/access_token`
+    - Access to the competition after accepting its rules:
+      https://www.kaggle.com/competitions/ieee-fraud-detection
 """
 
 from pathlib import Path

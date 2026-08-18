@@ -1,4 +1,9 @@
-"""Path resolution for IEEE-CIS raw data files."""
+"""Resolve raw and processed file paths for the IEEE-CIS pipeline.
+
+This module centralizes repository-relative path construction for raw Kaggle
+CSV inputs and generated Parquet outputs so scripts and library code use the
+same default locations.
+"""
 
 from dataclasses import dataclass
 from pathlib import Path

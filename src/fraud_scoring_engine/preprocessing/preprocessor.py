@@ -1,4 +1,9 @@
-"""Sklearn-compatible preprocessing for fraud model training and scoring."""
+"""Prepare fraud feature frames for model training and inference.
+
+This module implements the sklearn-compatible preprocessing layer that splits
+categorical and numeric columns, preserves missing values appropriately, and
+applies stable category handling for training and scoring.
+"""
 
 from __future__ import annotations
 

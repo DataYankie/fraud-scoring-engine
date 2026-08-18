@@ -1,4 +1,8 @@
-"""Time-based train/validation/test splits for fraud model experiments."""
+"""Create time-ordered dataset splits for fraud model evaluation.
+
+This module provides the sequential train, validation, and test split logic
+used to preserve temporal ordering when preparing fraud modeling datasets.
+"""
 
 from __future__ import annotations
 

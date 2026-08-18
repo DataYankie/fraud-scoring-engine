@@ -1,4 +1,9 @@
-"""SQLAlchemy engine and connection helpers."""
+"""Create SQLAlchemy engines and managed database connections.
+
+This module wraps the project database URL configuration and exposes helpers
+for opening engines and scoped connections used by ingest, feature generation,
+and training workflows.
+"""
 
 from collections.abc import Generator
 from contextlib import contextmanager

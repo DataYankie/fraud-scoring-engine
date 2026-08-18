@@ -1,4 +1,8 @@
-"""Export IEEE-CIS feature matrices to Parquet."""
+"""Write prepared IEEE-CIS feature frames to Parquet.
+
+This module contains the small persistence helper used by the ingest pipeline
+to validate the training feature matrix and save it to a Parquet artifact.
+"""
 
 from __future__ import annotations
 

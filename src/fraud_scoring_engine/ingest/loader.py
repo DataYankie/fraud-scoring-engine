@@ -1,4 +1,9 @@
-"""Orchestrate IEEE CSV ingestion into PostgreSQL and Parquet."""
+"""Orchestrate IEEE transaction ingestion into PostgreSQL and Parquet.
+
+This module coordinates the end-to-end ingest flow used by the script layer:
+it loads merged raw data, skips already ingested transactions, writes database
+records, and exports training features to Parquet.
+"""
 
 from __future__ import annotations
 

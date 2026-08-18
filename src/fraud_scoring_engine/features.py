@@ -1,4 +1,9 @@
-"""SQLAlchemy queries for per-transaction fraud scoring features."""
+"""Compute behavioral fraud features from historical transaction activity.
+
+This module defines rolling-window aggregates and dataset builders that derive
+per-transaction features, such as prior velocity and spend patterns, from the
+PostgreSQL transaction store.
+"""
 
 from __future__ import annotations
 

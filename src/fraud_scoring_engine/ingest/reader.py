@@ -1,4 +1,9 @@
-"""Load IEEE-CIS CSV data for database ingestion and Parquet export."""
+"""Load and merge IEEE-CIS CSV inputs for downstream ingest steps.
+
+This module provides the raw-data readers used by the ingest pipeline,
+including helpers for DB-only column slices, full feature loads, identity
+filtering, and the merged training frame consumed by orchestration code.
+"""
 
 from __future__ import annotations
 

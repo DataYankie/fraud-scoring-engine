@@ -1,4 +1,9 @@
-"""Configure MLflow tracking for fraud model experiments."""
+"""Configure MLflow tracking and artifact storage for experiments.
+
+This module encapsulates the project MLflow setup, including tracking URI
+resolution, artifact root creation, and experiment initialization for training
+runs.
+"""
 
 from __future__ import annotations
 

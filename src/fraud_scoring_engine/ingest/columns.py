@@ -1,4 +1,9 @@
-"""Column sets for PostgreSQL ingestion vs Parquet feature export."""
+"""Define IEEE-CIS column groups for ingest and feature export.
+
+This module declares which raw CSV columns are loaded into PostgreSQL, which
+identity fields are retained, and how the remaining columns are separated for
+Parquet-based training features.
+"""
 
 from __future__ import annotations
 
